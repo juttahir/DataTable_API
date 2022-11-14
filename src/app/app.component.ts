@@ -1,54 +1,87 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatPaginator } from '@angular/material/paginator';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
-import { Employee } from './environments/Employee';
-import { EnvironmentsService } from './environments/environments.service';
+import { ListPaymentDTO } from './payment.model';
+import { PaymentService } from './app.service';
 
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit{
+export class AppComponent implements OnInit {
   title = 'dataTable';
-  displayedColumns: string[] = ['id', 'document', 'email', 'description', 'actions'];
+  displayedColumns: string[] = ['document', 'email', 'description', 'definitive', 'status', 'createdDate', 'dateStart', 'dateEnd', 'actions'];
   dataSource: any;
-  empdata: Employee | any | undefined;
+  listPayment: ListPaymentDTO | any | undefined;
 
-  @ViewChild(MatPaginator) paginator !:MatPaginator;
-  @ViewChild(MatSort) sort !:MatSort;
-
-
-  constructor(private service:EnvironmentsService){
-
+  isLoading = false;
+  totalRows = 0;
+  currentPage = 0;
+  pageSize = 5;
+  pageSizeOptions: number[] = [5, 10, 25, 100];
+  
+  constructor(private paymentService: PaymentService) {
+    
   }
+  
+  @ViewChild(MatPaginator)
+  paginator!: MatPaginator;
+
+  // ngAfterViewInit() {
+  //   this.dataSource.paginator = this.paginator;
+  // }
+
   ngOnInit(): void {
-    this.GetAll();
+    this.getByPagination();
+    //this.GetAll();
   }
 
-  GetAll(){
-    this.service.GetEmployee()
-      .subscribe(result => {
-        this.empdata = result;
+  getByPagination() {
+    this.isLoading = true;
 
-        this.dataSource = new MatTableDataSource<Employee>(this.empdata)
-        this.dataSource.paginator = this.paginator;
-        this.dataSource.sort = this.sort;
+    this.paymentService.getByPagination(this.currentPage + 1, this.pageSize).subscribe(result => {
+      this.listPayment = result.allowListRegisters;
+
+      this.dataSource = new MatTableDataSource<ListPaymentDTO>(this.listPayment)      
+      this.dataSource.paginator = this.paginator;
+
+      setTimeout(() => {
+        this.paginator.pageIndex = this.currentPage;
+        this.paginator.length = result.totalCount;
+      });
+
+      this.isLoading = false;
+    }, error => {
+      this.isLoading = false;
+    });
+  }
+
+  pageChanged(event: PageEvent) {
+    this.pageSize = event.pageSize;
+    this.currentPage = event.pageIndex;
+    this.getByPagination();
+  }
+
+  GetAll() {
+    this.paymentService.getAll()
+      .subscribe(result => {
+        this.listPayment = result;
+
+        this.dataSource = new MatTableDataSource<ListPaymentDTO>(this.listPayment)
+        //this.dataSource.paginator = this.paginator;
+        //this.dataSource.sort = this.sort;
       });
   }
 
-  Filterchage(event: Event){
+  Filterchage(event: Event) {
     const filvalue = (event.target as HTMLInputElement).value;
     this.dataSource.filter = filvalue;
   }
-
-  getrow(row: any){
-    //console.log(row);
-  }
-
-  FunctionEdit(row: any){
-    console.log(row);
+  
+  FunctionEdit(arg0: any) {
+    throw new Error('Method not implemented.');
   }
 }

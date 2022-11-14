@@ -1,4 +1,4 @@
-export interface Employee{
+export interface ListPaymentDTO{
     id: string;
     document: string;
     email: string;
